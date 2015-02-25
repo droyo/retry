@@ -7,7 +7,7 @@
 // backoff strategies to produce a duration of time for the time.Sleep
 // function.  The retry package is inspired by the stateless backoff
 // techniques described in http://blog.gopheracademy.com/advent-2014/backoff/
-package retry
+package retry // import "aqwari.net/retry"
 
 import (
 	cryptrand "crypto/rand"
