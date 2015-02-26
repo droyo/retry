@@ -36,10 +36,9 @@ type Strategy func(nth int) time.Duration
 // the lesser of 2ⁿ or max seconds. If max is negative, the values
 // returned by the Strategy will continue increasing to the maximum
 // value of a time.Duration (about 290 years)
-func Exponential(max int) Strategy {
-	ceil := time.Second * time.Duration(max)
+func Exponential(max time.Duration) Strategy {
 	if max < 0 {
-		ceil = time.Duration(math.MaxInt64)
+		max = math.MaxInt64
 	}
 	return func(nth int) time.Duration {
 		x := 1
@@ -47,8 +46,8 @@ func Exponential(max int) Strategy {
 			x *= 2
 		}
 		val := time.Second * time.Duration(x)
-		if val < 0 || val > ceil {
-			val = ceil
+		if val < 0 || val > max {
+			val = max
 		}
 		return val
 	}

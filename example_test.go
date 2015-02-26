@@ -8,7 +8,7 @@ import (
 )
 
 func ExampleExponential() {
-	backoff := retry.Exponential(20).Splay(100)
+	backoff := retry.Exponential(time.Hour / 2).Splay(100)
 
 	for tries := 0; tries < 10; tries++ {
 		fmt.Println("Connecting to service")
