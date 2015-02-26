@@ -110,3 +110,23 @@ func (base Strategy) Scale(seconds float64) Strategy {
 		return time.Duration(math.Floor(float64(time.Second) * x))
 	}
 }
+
+// Prepend displaces the first len(seconds) mappings of a Strategy,
+// deriving durations from the given parameter list instead. Passing
+// len(seconds) to the returned strategy is equivalent to passing 0 to
+// the original strategy.
+func (base Strategy) Prepend(seconds ...float64) Strategy {
+	dur := make([]time.Duration, len(seconds))
+	for i, v := range seconds {
+		dur[i] = time.Duration(float64(time.Second) * v)
+	}
+	return func(nth int) time.Duration {
+		if nth < 0 {
+			nth = 0
+		}
+		if nth < len(dur) {
+			return dur[nth]
+		}
+		return base(nth - len(dur))
+	}
+}
