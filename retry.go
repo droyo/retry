@@ -89,7 +89,7 @@ func Seconds(secs ...int) Strategy {
 // and use the same backoff strategy to use a shared service.
 func (base Strategy) Splay(seconds float64) Strategy {
 	return func(retry int) time.Duration {
-		jitter := time.Duration(float64(time.Second) * seconds)
+		jitter := time.Duration(float64(time.Second) * seconds * randomsrc.Float64())
 		val := base(retry)
 		// avoid integer overflow
 		if jitter > 0 && val > math.MaxInt64-jitter {
@@ -97,7 +97,7 @@ func (base Strategy) Splay(seconds float64) Strategy {
 		} else if val < 0 && jitter < 0 && val < math.MinInt64-jitter {
 			jitter = -jitter
 		}
-		return base(retry) + jitter
+		return val + jitter
 	}
 }
 
