@@ -53,9 +53,26 @@ func Exponential(max time.Duration) Strategy {
 	}
 }
 
-// Milliseconds creates a backoff policy that selects the nth item in the
-// array, multiplied by time.Millisecond. If the retry counter is greater
-// than the number of items provided, the final item is returned.
+// Fixed creates a backoff policy that selects the nth duration in the
+// argument list. If the retry counter is greater than the number of
+// items provided, the final item is returned.  If the retry counter
+// is less than 0 the first item is returned.  If the parameter list
+// is empty, a run-time panic will occur when the Strategy is used.
+func Fixed(dur ...time.Duration) Strategy {
+	return func(nth int) time.Duration {
+		if nth < 0 {
+			nth = 0
+		}
+		if nth < len(dur) {
+			return dur[nth]
+		}
+		return dur[len(dur)-1]
+	}
+}
+
+// Milliseconds creates a backoff policy that selects the nth item in
+// the array, multiplied by time.Millisecond. If the retry counter is
+// greater than the number of items provided, the final item is returned.
 func Milliseconds(ms ...int) Strategy {
 	return func(nth int) time.Duration {
 		if nth < 0 {
@@ -69,8 +86,7 @@ func Milliseconds(ms ...int) Strategy {
 }
 
 // Seconds creates a backoff policy that selects the nth item in the
-// array, multiplied by time.Second. If the retry counter is greater
-// than the number of items provided, the final item is returned.
+// array, multiplied by time.Second.
 func Seconds(secs ...int) Strategy {
 	return func(nth int) time.Duration {
 		if nth < 0 {
@@ -83,13 +99,17 @@ func Seconds(secs ...int) Strategy {
 	}
 }
 
-// Splay adds a random duration in the range ±seconds to values returned
-// by a Strategy. Splay is useful for avoiding "thundering herd"
-// scenarios, where multiple processes become inadvertently synchronized
-// and use the same backoff strategy to use a shared service.
-func (base Strategy) Splay(seconds float64) Strategy {
+// Splay adds a random duration in the range ±duration to values
+// returned by a Strategy. Splay is useful for avoiding "thundering
+// herd" scenarios, where multiple processes become inadvertently
+// synchronized and use the same backoff strategy to use a shared
+// service.
+func (base Strategy) Splay(d time.Duration) Strategy {
 	return func(retry int) time.Duration {
-		jitter := time.Duration(float64(time.Second) * seconds * randomsrc.Float64())
+		jitter := time.Duration(randomsrc.Int63n(int64(d)))
+		if randomsrc.Int()%2 == 0 {
+			jitter = -jitter
+		}
 		val := base(retry)
 		// avoid integer overflow
 		if jitter > 0 && val > math.MaxInt64-jitter {
@@ -111,15 +131,11 @@ func (base Strategy) Scale(seconds float64) Strategy {
 	}
 }
 
-// Prepend displaces the first len(seconds) mappings of a Strategy,
-// deriving durations from the given parameter list instead. Passing
-// len(seconds) to the returned strategy is equivalent to passing 0 to
-// the original strategy.
-func (base Strategy) Prepend(seconds ...float64) Strategy {
-	dur := make([]time.Duration, len(seconds))
-	for i, v := range seconds {
-		dur[i] = time.Duration(float64(time.Second) * v)
-	}
+// Prepend displaces the first len(dur) mappings of a Strategy, selecting
+// durations from the given parameter list instead. Passing len(dur)
+// to the returned strategy is equivalent to passing 0 to the original
+// strategy.
+func (base Strategy) Prepend(dur ...time.Duration) Strategy {
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
@@ -128,5 +144,21 @@ func (base Strategy) Prepend(seconds ...float64) Strategy {
 			return dur[nth]
 		}
 		return base(nth - len(dur))
+	}
+}
+
+// Overwrite replaces the first len(dur) mappings of a Strategy, selecting
+// durations from the given parameter list instead. Passing len(dur) to
+// the returned strategy is equivalent to passing len(dur) to the original
+// strategy.
+func (base Strategy) Overwrite(dur ...time.Duration) Strategy {
+	return func(nth int) time.Duration {
+		if nth < 0 {
+			nth = 0
+		}
+		if nth < len(dur) {
+			return dur[nth]
+		}
+		return base(nth)
 	}
 }

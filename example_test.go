@@ -8,7 +8,7 @@ import (
 )
 
 func ExampleExponential() {
-	backoff := retry.Exponential(time.Hour / 2).Splay(100)
+	backoff := retry.Exponential(time.Hour / 2).Splay(time.Minute * 10)
 
 	for tries := 0; tries < 10; tries++ {
 		fmt.Println("Connecting to service")
@@ -75,8 +75,7 @@ func ExampleStrategy_Scale() {
 }
 
 func ExampleStrategy_Splay() {
-	// Splay ± ½ second
-	backoff := retry.Exponential(-1).Splay(.5)
+	backoff := retry.Exponential(-1).Splay(time.Second / 2)
 
 	for tries := 0; tries < 10; tries++ {
 		fmt.Println(backoff(tries))
