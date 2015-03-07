@@ -1,12 +1,18 @@
 // Package retry provides a stateless method for implementing
-// exponential and other backoff policies.
+// exponential and other backoff strategies.
 //
-// Users of the backoff package are expected to maintain a counter
-// variable that represents the number of retries of a given operation.
-// This counter is then mapped through one of the provided or user-created
-// backoff strategies to produce a duration of time for the time.Sleep
-// function.  The retry package is inspired by the stateless backoff
-// techniques described in http://blog.gopheracademy.com/advent-2014/backoff/
+// The retry package defines a Strategy as a function that maps an
+// integer to a time.Duration. Users of the retry package are expected
+// to maintain a counter variable that represents the number of retries
+// of a given operation.  This counter is then mapped through one of
+// the provided or user-created backoff strategies to produce a duration
+// of time for the time.Sleep function.  The retry package is inspired
+// by the stateless backoff techniques described in
+// http://blog.gopheracademy.com/advent-2014/backoff/
+//
+// Complex backoff strategies can be built by using the methods defined
+// in the retry package to add random splay, overwrite, or otherwise
+// manipulate the values returned by a Strategy.
 package retry // import "aqwari.net/retry"
 
 import (

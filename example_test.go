@@ -1,6 +1,7 @@
 package retry_test
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -39,7 +40,7 @@ func ExampleSeconds() {
 func ExampleMilliseconds() {
 	backoff := retry.Milliseconds(2, 4, 6, 22, 39, 18)
 
-	for tries := 0; tries < 10; tries++ {
+	for tries := 0; tries < 8; tries++ {
 		fmt.Printf("Connection failed; will try again in %s\n", backoff(tries))
 	}
 	// Output: Connection failed; will try again in 2ms
@@ -47,8 +48,6 @@ func ExampleMilliseconds() {
 	// Connection failed; will try again in 6ms
 	// Connection failed; will try again in 22ms
 	// Connection failed; will try again in 39ms
-	// Connection failed; will try again in 18ms
-	// Connection failed; will try again in 18ms
 	// Connection failed; will try again in 18ms
 	// Connection failed; will try again in 18ms
 	// Connection failed; will try again in 18ms
@@ -80,4 +79,77 @@ func ExampleStrategy_Splay() {
 	for tries := 0; tries < 10; tries++ {
 		fmt.Println(backoff(tries))
 	}
+}
+
+func ExampleStrategy_Fixed() {
+	backoff := retry.Fixed(time.Minute, time.Hour, time.Hour*2)
+
+	for tries := 0; tries < 4; tries++ {
+		fmt.Println(backoff(tries))
+	}
+
+	// Output: 1m0s
+	// 1h0m0s
+	// 2h0m0s
+	// 2h0m0s
+}
+
+func ExampleStrategy_Prepend() {
+	backoff := retry.Exponential(-1).Prepend(time.Minute)
+
+	for tries := 0; tries < 10; tries++ {
+		fmt.Println(backoff(tries))
+	}
+
+	// Output: 1m0s
+	// 1s
+	// 2s
+	// 4s
+	// 8s
+	// 16s
+	// 32s
+	// 1m4s
+	// 2m8s
+	// 4m16s
+}
+
+func Example() {
+	// mock for an unreliable remote service
+	getdump := func(i int) error {
+		if i%3 == 0 {
+			return nil
+		}
+		return errors.New("remote call failed")
+	}
+	// Request a dump from a service every hour. If something goes
+	// wrong, retry on lengthening intervals until we get a response,
+	// then go back to per-hour dumps.
+	backoff := retry.Exponential(time.Hour).Scale(60).Overwrite(time.Hour)
+	try := 0
+
+	for i := 0; i < 7; i++ {
+		if err := getdump(i); err != nil {
+			try++
+			fmt.Println(err)
+		} else {
+			try = 0
+			fmt.Println("success")
+		}
+		fmt.Printf("sleeping %s\n", backoff(try))
+	}
+
+	// Output: success
+	// sleeping 1h0m0s
+	// remote call failed
+	// sleeping 2m0s
+	// remote call failed
+	// sleeping 4m0s
+	// success
+	// sleeping 1h0m0s
+	// remote call failed
+	// sleeping 2m0s
+	// remote call failed
+	// sleeping 4m0s
+	// success
+	// sleeping 1h0m0s
 }
