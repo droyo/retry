@@ -63,8 +63,11 @@ func Exponential(max time.Duration) Strategy {
 // argument list. If the retry counter is greater than the number of
 // items provided, the final item is returned.  If the retry counter
 // is less than 0 the first item is returned.  If the parameter list
-// is empty, a run-time panic will occur when the Strategy is used.
+// is empty, the returned strategy will always return 0.
 func Fixed(dur ...time.Duration) Strategy {
+	if len(dur) == 0 {
+		return func(int) time.Duration { return 0 }
+	}
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
@@ -80,6 +83,9 @@ func Fixed(dur ...time.Duration) Strategy {
 // the array, multiplied by time.Millisecond. If the retry counter is
 // greater than the number of items provided, the final item is returned.
 func Milliseconds(ms ...int) Strategy {
+	if len(ms) == 0 {
+		return func(int) time.Duration { return 0 }
+	}
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
@@ -94,6 +100,9 @@ func Milliseconds(ms ...int) Strategy {
 // Seconds creates a backoff policy that selects the nth item in the
 // array, multiplied by time.Second.
 func Seconds(secs ...int) Strategy {
+	if len(secs) == 0 {
+		return func(int) time.Duration { return 0 }
+	}
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
