@@ -6,3 +6,4 @@ the overall idea, the finer details of the API may be changed for
 a while longer.
 
 API documentation can be found at http://godoc.org/aqwari.net/retry.
+Issues may be opened at github.com/droyo/retry.
