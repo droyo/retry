@@ -120,6 +120,9 @@ func Seconds(secs ...int) Strategy {
 // synchronized and use the same backoff strategy to use a shared
 // service.
 func (base Strategy) Splay(d time.Duration) Strategy {
+	if base == nil {
+		panic("Splay called on nil Strategy")
+	}
 	return func(retry int) time.Duration {
 		jitter := time.Duration(randomsrc.Int63n(int64(d)))
 		if randomsrc.Int()%2 == 0 {
@@ -140,6 +143,9 @@ func (base Strategy) Splay(d time.Duration) Strategy {
 // returned Policy will return values from the policy, uniformly
 // multiplied by secs.
 func (base Strategy) Scale(seconds float64) Strategy {
+	if base == nil {
+		panic("Scale called on nil Strategy")
+	}
 	return func(retry int) time.Duration {
 		x := base(retry).Seconds() * seconds
 		return time.Duration(math.Floor(float64(time.Second) * x))
@@ -151,6 +157,9 @@ func (base Strategy) Scale(seconds float64) Strategy {
 // to the returned strategy is equivalent to passing 0 to the original
 // strategy.
 func (base Strategy) Prepend(dur ...time.Duration) Strategy {
+	if base == nil {
+		panic("Prepend called on nil Strategy")
+	}
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
@@ -167,6 +176,9 @@ func (base Strategy) Prepend(dur ...time.Duration) Strategy {
 // the returned strategy is equivalent to passing len(dur) to the original
 // strategy.
 func (base Strategy) Overwrite(dur ...time.Duration) Strategy {
+	if base == nil {
+		panic("Overwrite called on nil Strategy")
+	}
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
