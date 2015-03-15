@@ -39,7 +39,7 @@ func init() {
 type Strategy func(nth int) time.Duration
 
 // Exponential creates an exponential backoff Strategy that returns
-// the lesser of 2ⁿ or max seconds. If max is negative, the values
+// the lesser of 2ⁿ or max nanoseconds. If max is negative, the values
 // returned by the Strategy will continue increasing to the maximum
 // value of a time.Duration (about 290 years)
 func Exponential(max time.Duration) Strategy {
@@ -51,7 +51,7 @@ func Exponential(max time.Duration) Strategy {
 		for i := 0; i < nth; i++ {
 			x *= 2
 		}
-		val := time.Second * time.Duration(x)
+		val := time.Duration(x)
 		if val < 0 || val > max {
 			val = max
 		}
@@ -139,9 +139,9 @@ func (base Strategy) Splay(d time.Duration) Strategy {
 	}
 }
 
-// Scale scales a backoff policy by a constant number of seconds. The
-// returned Policy will return values from the policy, uniformly
-// multiplied by secs.
+// Scale scales a backoff policy by a fixed duration. The returned
+// Policy will return values from the policy, uniformly multiplied by
+// secs.
 func (base Strategy) Scale(seconds float64) Strategy {
 	if base == nil {
 		panic("Scale called on nil Strategy")
@@ -152,13 +152,46 @@ func (base Strategy) Scale(seconds float64) Strategy {
 	}
 }
 
-// Prepend displaces the first len(dur) mappings of a Strategy, selecting
+// Units multiplies all values returned by a duration by a fixed
+// duration.
+func (base Strategy) Units(units time.Duration) Strategy {
+	if base == nil {
+		panic("Units called on nil Strategy")
+	}
+	return func(retry int) time.Duration {
+		return base(retry) * units
+	}
+}
+
+// Add adds a fixed duration to every duration returned by a
+// Strategy.
+func (base Strategy) Add(dur time.Duration) Strategy {
+	if base == nil {
+		panic("Add called on nil Strategy")
+	}
+	return func(retry int) time.Duration {
+		return base(retry) + dur
+	}
+}
+
+// Sub subtracts a fixed duration from every duration returned
+// by a Strategy.
+func (base Strategy) Sub(dur time.Duration) Strategy {
+	if base == nil {
+		panic("Sub called on nil Strategy")
+	}
+	return func(retry int) time.Duration {
+		return base(retry) + dur
+	}
+}
+
+// Unshift displaces the first len(dur) mappings of a Strategy, selecting
 // durations from the given parameter list instead. Passing len(dur)
 // to the returned strategy is equivalent to passing 0 to the original
 // strategy.
-func (base Strategy) Prepend(dur ...time.Duration) Strategy {
+func (base Strategy) Unshift(dur ...time.Duration) Strategy {
 	if base == nil {
-		panic("Prepend called on nil Strategy")
+		panic("Unshift called on nil Strategy")
 	}
 	return func(nth int) time.Duration {
 		if nth < 0 {
@@ -168,6 +201,18 @@ func (base Strategy) Prepend(dur ...time.Duration) Strategy {
 			return dur[nth]
 		}
 		return base(nth - len(dur))
+	}
+}
+
+// Shift skips the first n values of a Strategy. Passing 0+i to the
+// returned Strategy is equivalent to passing n+i to the original
+// Strategy.
+func (base Strategy) Shift(n int) Strategy {
+	if base == nil {
+		panic("Shift called on nil Strategy")
+	}
+	return func(retry int) time.Duration {
+		return base(retry + n)
 	}
 }
 
