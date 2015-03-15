@@ -9,14 +9,22 @@ import (
 )
 
 func ExampleExponential() {
-	backoff := retry.Exponential(time.Hour / 2).Splay(time.Minute * 10)
+	backoff := retry.Exponential().Units(time.Second)
 
 	for tries := 0; tries < 10; tries++ {
-		fmt.Println("Connecting to service")
-		b := backoff(tries)
-		fmt.Printf("Connection failed; will try again in %s", b)
-		time.Sleep(b)
+		fmt.Printf("Connection failed; will try again in %s\n", backoff(tries))
 	}
+
+	// Output: Connection failed; will try again in 1s
+	// Connection failed; will try again in 2s
+	// Connection failed; will try again in 4s
+	// Connection failed; will try again in 8s
+	// Connection failed; will try again in 16s
+	// Connection failed; will try again in 32s
+	// Connection failed; will try again in 1m4s
+	// Connection failed; will try again in 2m8s
+	// Connection failed; will try again in 4m16s
+	// Connection failed; will try again in 8m32s
 }
 
 func ExampleSeconds() {
@@ -54,7 +62,7 @@ func ExampleMilliseconds() {
 }
 
 func ExampleStrategy_Add() {
-	backoff := retry.Exponential(-1).Units(time.Second).Add(time.Minute)
+	backoff := retry.Exponential().Units(time.Second).Add(time.Minute)
 
 	for tries := 0; tries < 10; tries++ {
 		fmt.Println(backoff(tries))
@@ -74,7 +82,7 @@ func ExampleStrategy_Add() {
 
 func ExampleStrategy_Scale() {
 	// Sleep for 2ⁿ milliseconds, not seconds
-	backoff := retry.Exponential(-1).Units(time.Second).Scale(1e-3)
+	backoff := retry.Exponential().Units(time.Second).Scale(1e-3)
 
 	for tries := 0; tries < 10; tries++ {
 		fmt.Println(backoff(tries))
@@ -93,7 +101,7 @@ func ExampleStrategy_Scale() {
 }
 
 func ExampleStrategy_Splay() {
-	backoff := retry.Exponential(-1).Splay(time.Second / 2)
+	backoff := retry.Exponential().Splay(time.Second / 2)
 
 	for tries := 0; tries < 10; tries++ {
 		fmt.Println(backoff(tries))
@@ -114,7 +122,9 @@ func ExampleStrategy_Fixed() {
 }
 
 func ExampleStrategy_Unshift() {
-	backoff := retry.Exponential(-1).Units(time.Second).Unshift(time.Minute)
+	backoff := retry.Exponential().
+		Units(time.Second).
+		Unshift(time.Minute)
 
 	for tries := 0; tries < 10; tries++ {
 		fmt.Println(backoff(tries))
@@ -164,7 +174,7 @@ func Example() {
 	// Request a dump from a service every hour. If something goes
 	// wrong, retry on lengthening intervals until we get a response,
 	// then go back to per-hour dumps.
-	backoff := retry.Exponential(3600).
+	backoff := retry.Exponential().
 		Units(time.Minute).
 		Shift(1).
 		Overwrite(time.Hour)

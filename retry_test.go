@@ -6,9 +6,8 @@ import (
 )
 
 func TestExponentialBackoff(t *testing.T) {
-	const max = 300
 	var next, prev time.Duration
-	var bk = Exponential(max)
+	var bk = Exponential()
 
 	for i := 0; i < 100; i++ {
 		next = bk(i)
@@ -21,9 +20,6 @@ func TestExponentialBackoff(t *testing.T) {
 				i, next, i-1, prev)
 		}
 		prev = next
-	}
-	if next > max*time.Second {
-		t.Errorf("backoff (%s) exceeded max limit of %s", next, time.Second*max)
 	}
 }
 

@@ -39,23 +39,22 @@ func init() {
 type Strategy func(nth int) time.Duration
 
 // Exponential creates an exponential backoff Strategy that returns
-// the lesser of 2ⁿ or max nanoseconds. If max is negative, the values
-// returned by the Strategy will continue increasing to the maximum
-// value of a time.Duration (about 290 years)
-func Exponential(max time.Duration) Strategy {
-	if max < 0 {
-		max = math.MaxInt64
-	}
-	return func(nth int) time.Duration {
-		x := 1
-		for i := 0; i < nth; i++ {
+// 2ⁿ nanoseconds. The values returned by Exponential will increase
+// up to the maximum value of time.Duration and will not overflow.
+func Exponential() Strategy {
+	return func(retry int) time.Duration {
+		if retry < 0 {
+			// Can't return a fraction of a nanosecond
+			return 0
+		}
+		var x int64 = 1
+		for i := 0; i < retry; i++ {
+			if x > math.MaxInt64/2 {
+				return math.MaxInt64
+			}
 			x *= 2
 		}
-		val := time.Duration(x)
-		if val < 0 || val > max {
-			val = max
-		}
-		return val
+		return time.Duration(x)
 	}
 }
 
@@ -213,6 +212,38 @@ func (base Strategy) Shift(n int) Strategy {
 	}
 	return func(retry int) time.Duration {
 		return base(retry + n)
+	}
+}
+
+// The Floor method imposes a minimum value on the durations returned
+// by a Strategy. Values returned by the resulting Strategy will always
+// be greater than or equal to min.
+func (base Strategy) Floor(min time.Duration) Strategy {
+	if base == nil {
+		panic("Overwrite called on nil Strategy")
+	}
+	return func(retry int) time.Duration {
+		val := base(retry)
+		if val < min {
+			return min
+		}
+		return val
+	}
+}
+
+// The Ceil method imposes a maximum value on the durations returned
+// by a Strategy. Values returned by the resulting Strategy will always
+// be less than or equal to max
+func (base Strategy) Ceil(max time.Duration) Strategy {
+	if base == nil {
+		panic("Ceil called on nil Strategy")
+	}
+	return func(retry int) time.Duration {
+		val := base(retry)
+		if val > max {
+			return max
+		}
+		return val
 	}
 }
 
