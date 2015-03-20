@@ -7,7 +7,7 @@ import (
 
 func TestExponentialBackoff(t *testing.T) {
 	var next, prev time.Duration
-	var bk = Exponential()
+	var bk = Exponential(time.Second)
 
 	for i := 0; i < 100; i++ {
 		next = bk(i)
@@ -23,7 +23,7 @@ func TestExponentialBackoff(t *testing.T) {
 	}
 }
 
-func TestFixedBackoff(t *testing.T) {
+func TestIntervalBackoff(t *testing.T) {
 	x := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	const jitter = 50
 	backoff := Seconds(x...)

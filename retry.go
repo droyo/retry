@@ -39,31 +39,34 @@ func init() {
 type Strategy func(nth int) time.Duration
 
 // Exponential creates an exponential backoff Strategy that returns
-// 2ⁿ nanoseconds. The values returned by Exponential will increase
-// up to the maximum value of time.Duration and will not overflow.
-func Exponential() Strategy {
+// 2ⁿ units. The values returned by Exponential will increase up to
+// the maximum value of time.Duration and will not overflow.
+func Exponential(units time.Duration) Strategy {
 	return func(retry int) time.Duration {
 		if retry < 0 {
-			// Can't return a fraction of a nanosecond
+			// NOTE(droyo) We could return 2ⁿ here by
+			// taking the nth root if units is more than
+			// 1ns, but I don't see such a feature being
+			// used.
 			return 0
 		}
-		var x int64 = 1
+		x := units
 		for i := 0; i < retry; i++ {
 			if x > math.MaxInt64/2 {
 				return math.MaxInt64
 			}
 			x *= 2
 		}
-		return time.Duration(x)
+		return x
 	}
 }
 
-// Fixed creates a backoff policy that selects the nth duration in the
+// Intervals creates a backoff policy that selects the nth duration in the
 // argument list. If the retry counter is greater than the number of
 // items provided, the final item is returned.  If the retry counter
 // is less than 0 the first item is returned.  If the parameter list
 // is empty, the returned strategy will always return 0.
-func Fixed(dur ...time.Duration) Strategy {
+func Intervals(dur ...time.Duration) Strategy {
 	if len(dur) == 0 {
 		return func(int) time.Duration { return 0 }
 	}
@@ -138,49 +141,14 @@ func (base Strategy) Splay(d time.Duration) Strategy {
 	}
 }
 
-// Scale scales a backoff policy by a fixed duration. The returned
-// Policy will return values from the policy, uniformly multiplied by
-// secs.
-func (base Strategy) Scale(seconds float64) Strategy {
-	if base == nil {
-		panic("Scale called on nil Strategy")
-	}
-	return func(retry int) time.Duration {
-		x := base(retry).Seconds() * seconds
-		return time.Duration(math.Floor(float64(time.Second) * x))
-	}
-}
-
-// Units multiplies all values returned by a duration by a fixed
+// Scale multiplies all values returned by a duration by a fixed
 // duration.
-func (base Strategy) Units(units time.Duration) Strategy {
+func (base Strategy) Scale(units time.Duration) Strategy {
 	if base == nil {
 		panic("Units called on nil Strategy")
 	}
 	return func(retry int) time.Duration {
 		return base(retry) * units
-	}
-}
-
-// Add adds a fixed duration to every duration returned by a
-// Strategy.
-func (base Strategy) Add(dur time.Duration) Strategy {
-	if base == nil {
-		panic("Add called on nil Strategy")
-	}
-	return func(retry int) time.Duration {
-		return base(retry) + dur
-	}
-}
-
-// Sub subtracts a fixed duration from every duration returned
-// by a Strategy.
-func (base Strategy) Sub(dur time.Duration) Strategy {
-	if base == nil {
-		panic("Sub called on nil Strategy")
-	}
-	return func(retry int) time.Duration {
-		return base(retry) + dur
 	}
 }
 
@@ -215,10 +183,10 @@ func (base Strategy) Shift(n int) Strategy {
 	}
 }
 
-// The Floor method imposes a minimum value on the durations returned
+// The Min method imposes a minimum value on the durations returned
 // by a Strategy. Values returned by the resulting Strategy will always
 // be greater than or equal to min.
-func (base Strategy) Floor(min time.Duration) Strategy {
+func (base Strategy) Min(min time.Duration) Strategy {
 	if base == nil {
 		panic("Overwrite called on nil Strategy")
 	}
@@ -231,10 +199,10 @@ func (base Strategy) Floor(min time.Duration) Strategy {
 	}
 }
 
-// The Ceil method imposes a maximum value on the durations returned
+// The Max method imposes a maximum value on the durations returned
 // by a Strategy. Values returned by the resulting Strategy will always
 // be less than or equal to max
-func (base Strategy) Ceil(max time.Duration) Strategy {
+func (base Strategy) Max(max time.Duration) Strategy {
 	if base == nil {
 		panic("Ceil called on nil Strategy")
 	}
