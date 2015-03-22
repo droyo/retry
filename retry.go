@@ -121,7 +121,7 @@ func Seconds(secs ...int) Strategy {
 // herd" scenarios, where multiple processes become inadvertently
 // synchronized and use the same backoff strategy to use a shared
 // service.
-func (base Strategy) Splay(d time.Duration) Strategy {
+func (base Strategy) Splay(duration time.Duration) Strategy {
 	if base == nil {
 		panic("Splay called on nil Strategy")
 	}
@@ -141,8 +141,7 @@ func (base Strategy) Splay(d time.Duration) Strategy {
 	}
 }
 
-// Scale multiplies all values returned by a duration by a fixed
-// duration.
+// Scale multiplies all values returned by a fixed duration.
 func (base Strategy) Scale(units time.Duration) Strategy {
 	if base == nil {
 		panic("Units called on nil Strategy")
