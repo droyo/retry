@@ -42,8 +42,8 @@ type Strategy func(nth int) time.Duration
 // 2ⁿ units. The values returned by Exponential will increase up to
 // the maximum value of time.Duration and will not overflow.
 func Exponential(units time.Duration) Strategy {
-	return func(retry int) time.Duration {
-		if retry < 0 {
+	return func(try int) time.Duration {
+		if try < 0 {
 			// NOTE(droyo) We could return 2ⁿ here by
 			// taking the nth root if units is more than
 			// 1ns, but I don't see such a feature being
@@ -51,7 +51,7 @@ func Exponential(units time.Duration) Strategy {
 			return 0
 		}
 		x := units
-		for i := 0; i < retry; i++ {
+		for i := 0; i < try; i++ {
 			if x > math.MaxInt64/2 {
 				return math.MaxInt64
 			}
@@ -125,12 +125,12 @@ func (base Strategy) Splay(duration time.Duration) Strategy {
 	if base == nil {
 		panic("Splay called on nil Strategy")
 	}
-	return func(retry int) time.Duration {
+	return func(try int) time.Duration {
 		jitter := time.Duration(randomsrc.Int63n(int64(duration)))
 		if randomsrc.Int()%2 == 0 {
 			jitter = -jitter
 		}
-		val := base(retry)
+		val := base(try)
 		// avoid integer overflow
 		if jitter > 0 && val > math.MaxInt64-jitter {
 			jitter = -jitter
@@ -146,8 +146,8 @@ func (base Strategy) Scale(units time.Duration) Strategy {
 	if base == nil {
 		panic("Units called on nil Strategy")
 	}
-	return func(retry int) time.Duration {
-		return base(retry) * units
+	return func(try int) time.Duration {
+		return base(try) * units
 	}
 }
 
@@ -177,8 +177,8 @@ func (base Strategy) Shift(n int) Strategy {
 	if base == nil {
 		panic("Shift called on nil Strategy")
 	}
-	return func(retry int) time.Duration {
-		return base(retry + n)
+	return func(try int) time.Duration {
+		return base(try + n)
 	}
 }
 
@@ -189,8 +189,8 @@ func (base Strategy) Min(min time.Duration) Strategy {
 	if base == nil {
 		panic("Overwrite called on nil Strategy")
 	}
-	return func(retry int) time.Duration {
-		val := base(retry)
+	return func(try int) time.Duration {
+		val := base(try)
 		if val < min {
 			return min
 		}
@@ -205,8 +205,8 @@ func (base Strategy) Max(max time.Duration) Strategy {
 	if base == nil {
 		panic("Ceil called on nil Strategy")
 	}
-	return func(retry int) time.Duration {
-		val := base(retry)
+	return func(try int) time.Duration {
+		val := base(try)
 		if val > max {
 			return max
 		}
