@@ -126,7 +126,7 @@ func (base Strategy) Splay(duration time.Duration) Strategy {
 		panic("Splay called on nil Strategy")
 	}
 	return func(retry int) time.Duration {
-		jitter := time.Duration(randomsrc.Int63n(int64(d)))
+		jitter := time.Duration(randomsrc.Int63n(int64(duration)))
 		if randomsrc.Int()%2 == 0 {
 			jitter = -jitter
 		}
