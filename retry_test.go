@@ -5,6 +5,17 @@ import (
 	"time"
 )
 
+func TestSplay(t *testing.T) {
+	const s = 5
+	backoff := Intervals(0)
+	for i := 0; i < 1e5; i++ {
+		b := backoff(0)
+		if b < -s || b > +s {
+			t.Errorf("Splay should be in the range [0, ±%d), got %d", s, b)
+		}
+	}
+}
+
 func TestExponentialBackoff(t *testing.T) {
 	var next, prev time.Duration
 	var bk = Exponential(time.Second)

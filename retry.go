@@ -20,17 +20,30 @@ import (
 	"encoding/binary"
 	"math"
 	"math/rand"
+	"sync"
 	"time"
 )
 
-var randomsrc *rand.Rand
+var randomsrc struct {
+	r *rand.Rand
+	sync.Mutex
+}
+
+func randint64() int64 {
+	randomsrc.Lock()
+	x := randomsrc.r.Int63()
+	randomsrc.Unlock()
+	return x
+}
 
 func init() {
 	var seed int64
 	if err := binary.Read(cryptrand.Reader, binary.BigEndian, &seed); err != nil {
 		panic("backoff: failed to seed RNG: " + err.Error())
 	}
-	randomsrc = rand.New(rand.NewSource(seed))
+	randomsrc.Lock()
+	randomsrc.r = rand.New(rand.NewSource(seed))
+	randomsrc.Unlock()
 }
 
 // A Strategy is a mapping from a retry counter to a duration of time.
@@ -70,14 +83,17 @@ func Intervals(dur ...time.Duration) Strategy {
 	if len(dur) == 0 {
 		return func(int) time.Duration { return 0 }
 	}
+	buf := make([]time.Duration, len(dur))
+	copy(buf, dur)
+
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
 		}
-		if nth < len(dur) {
-			return dur[nth]
+		if nth < len(buf) {
+			return buf[nth]
 		}
-		return dur[len(dur)-1]
+		return buf[len(buf)-1]
 	}
 }
 
@@ -88,14 +104,16 @@ func Milliseconds(ms ...int) Strategy {
 	if len(ms) == 0 {
 		return func(int) time.Duration { return 0 }
 	}
+	buf := make([]int, len(ms))
+	copy(buf, ms)
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
 		}
-		if nth < len(ms) {
-			return time.Millisecond * time.Duration(ms[nth])
+		if nth < len(buf) {
+			return time.Millisecond * time.Duration(buf[nth])
 		}
-		return time.Millisecond * time.Duration(ms[len(ms)-1])
+		return time.Millisecond * time.Duration(buf[len(buf)-1])
 	}
 }
 
@@ -105,6 +123,8 @@ func Seconds(secs ...int) Strategy {
 	if len(secs) == 0 {
 		return func(int) time.Duration { return 0 }
 	}
+	buf := make([]int, len(secs))
+	copy(buf, secs)
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
@@ -125,9 +145,10 @@ func (base Strategy) Splay(duration time.Duration) Strategy {
 	if base == nil {
 		panic("Splay called on nil Strategy")
 	}
+	r := rand.New(rand.NewSource(randint64()))
 	return func(try int) time.Duration {
-		jitter := time.Duration(randomsrc.Int63n(int64(duration)))
-		if randomsrc.Int()%2 == 0 {
+		jitter := time.Duration(r.Int63n(int64(duration)))
+		if r.Int()%2 == 0 {
 			jitter = -jitter
 		}
 		val := base(try)
