@@ -180,14 +180,16 @@ func (base Strategy) Unshift(dur ...time.Duration) Strategy {
 	if base == nil {
 		panic("Unshift called on nil Strategy")
 	}
+	buf := make([]time.Duration, len(dur))
+	copy(buf, dur)
 	return func(nth int) time.Duration {
 		if nth < 0 {
 			nth = 0
 		}
-		if nth < len(dur) {
-			return dur[nth]
+		if nth < len(buf) {
+			return buf[nth]
 		}
-		return base(nth - len(dur))
+		return base(nth - len(buf))
 	}
 }
 
