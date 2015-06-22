@@ -34,16 +34,30 @@ func TestExponentialBackoff(t *testing.T) {
 	}
 }
 
+func TestFibonacciBackoff(t *testing.T) {
+	ans := []time.Duration{0, 1, 1, 2, 3, 5, 8, 13, 21, 34}
+	backoff := Fibonacci(1)
+	for i, v := range ans {
+		if x := backoff(i); x != v {
+			t.Errorf("fibonacci backoff(%d) = %s, should be %s", i, x, v)
+		} else {
+			t.Logf("fibonacci backoff(%d) = %s", i, x)
+		}
+	}
+	if backoff(-1) != 0 {
+		t.Errorf("fibonacci backoff(-1) = %s, should be 0ns", backoff(-1))
+	}
+}
+		
 func TestIntervalBackoff(t *testing.T) {
-	x := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	const jitter = 50
-	backoff := Seconds(x...)
+	ans := []time.Duration{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+	backoff := Intervals(ans...)
 
-	for i, v := range x {
-		t.Logf("fixed backoff(%d) = %s", i, backoff(i))
-		if backoff(i) != time.Duration(v)*time.Second {
-			t.Errorf("fixed backoff(%d) = %s, should be > %s", i, backoff(i),
-				time.Duration(v)*time.Second)
+	for i, v := range ans {
+		if x := backoff(i); x != v {
+			t.Errorf("fixed backoff(%d) = %s, should be %s", i, x, v)
+		} else {
+			t.Logf("fixed backoff(%d) = %s", i, x)
 		}
 	}
 }

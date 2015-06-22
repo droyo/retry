@@ -51,6 +51,21 @@ func init() {
 // capture the most common use cases.
 type Strategy func(nth int) time.Duration
 
+// Fibonacci creates a Strategy that returns fib(n) units, where
+// fib is the fibonacci function, f(n) = f(n-1) + f(n-2).
+func Fibonacci(units time.Duration) Strategy {
+	return func(n int) time.Duration {
+		f := [...]time.Duration{1,0}
+		if n <= 0 {
+			return 0
+		}
+		for i := 1; i < n; i++ {
+			f[0], f[1] = f[0] + f[1], f[0]
+		}
+		return f[0] * units
+	}
+}
+
 // Exponential creates an exponential backoff Strategy that returns
 // 2ⁿ units. The values returned by Exponential will increase up to
 // the maximum value of time.Duration and will not overflow.
