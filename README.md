@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/droyo/retry.svg?branch=master)](https://travis-ci.org/droyo/retry)
-[![Build Status](https://travis-ci.org/droyo/retry.svg?branch=master)](https://travis-ci.org/droyo/retry)
+[![GoDoc](https://godoc.org/aqwari.net/retry?status.svg)](https://godoc.org/aqwari.net/retry)
 
 ## `retry` - backoff strategies for Go
 
